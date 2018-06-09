@@ -1,0 +1,30 @@
+Definir como a árvore será escrita:
+
+	Um nó por linha
+	Escrever na ordem que vão aparecendo na adição
+	Divisor: |
+----
+Tipos de dados: (classe para o nó, struct para índice primário)
+
+	Nó terá um vetor de índices primários e outro de ponteiros (número da linha do no filho)
+----
+Funções:
+
+	Criação índice primário
+	Criar arvore vazia
+	Procurar
+	Adicionar (Ordenação ao adicionar: sort no vetor de índices primários e shift no vetor de ponteiros
+baseado na posição em que o novo índice foi adicionado)
+
+	Fazer construtor
+	Remover
+
+----
+
+Módulos:
+
+	Operações no arquivo principal
+	Operações no arquivo de índices
+	Operações gerais
+	Interface
+	IO - Receber chave ou registro + Show tree 
