@@ -32,7 +32,7 @@ string primary_key_creator(string line, string line_ws)
 	return line_ws;
 }
 
-int index_file_creator (string file_name)
+int empty_index_file_creator (string file_name)
 {
 
 	ofstream index_file;
@@ -84,3 +84,6 @@ node_B_Tree get_node (string file_name, int line_number)
 }
 
 int line2vectors (string line, vector, vector)
+{
+	
+}
