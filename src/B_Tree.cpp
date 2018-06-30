@@ -23,28 +23,38 @@ bool compare_primary_key(const primary_key &a, const primary_key &b)
 
 int node_B_Tree::index_file_creator(std::string name_in)
 {
+	this->counter = 0;
+	const int empty = 0;
+
+	// Which register position 	in the data file
+	int data_placing = 0;
+
+	// Vector of data's NRR in data file
+	std::string NRR;
+	std::vector<std::string> NRR_vector;
+
 	// Original Data base file(lista.txt)
 	ifstream main_file;
 
 	// Index_file
 	ofstream index_file;
 
-	int file_line_number = 0;
 
 	// Output file name
 	std::string name_out = "indicelista";
 	std::string extension = ".bt";
 
+	name_out += extension;
+
 	// Node's out in index file
-	std::string node;
+	file_input line_inf;
+	line_inf.file_line_number = 1;
 
 	// Main's file line
 	std::string line;
 
 	// Primary key value
 	std::string primary_key_input;
-
-	name_out += extension;
 
 	index_file.open(name_out, ios::out | ios::trunc);
 	main_file.open(name_in, ios::in);
@@ -53,26 +63,37 @@ int node_B_Tree::index_file_creator(std::string name_in)
 
 	while(getline(main_file,line))
 	{
-		std::string node;
-		file_line_number++;
+		// Reinitialization of string "node" if node is full
+		if(this->primary_key_vector.size() == empty)
+		{
+			line_inf.node.erase(line_inf.node.begin(), line_inf.node.end());
+		}
 
+		// Reinitialization of string "NRR"
+		NRR.erase(NRR.begin(), NRR.end());
+
+		// Inserts primary key value to line
 		primary_key_input = primary_key_creator(line,primary_key_input);
 
-		node += to_string(file_line_number);
-		if(file_line_number < 10)
+		if(data_placing < 10)
 		{
-			node += " ";
+			NRR += "0";
 		}
-		node += "|";
-		node += primary_key_input;
-		node += "|";
 
+		NRR += to_string(data_placing+1);
 
+		insert_data_non_full(primary_key_input, NRR, &line_inf);
 
-		cout << node << endl;
+		data_placing++;
 
+		if(data_placing == 5)
+		{
+			break;
+		}
 
 	}
+
+	cout << line_inf.node << endl;
 
 	main_file.close();
 	index_file.close();
@@ -80,7 +101,9 @@ int node_B_Tree::index_file_creator(std::string name_in)
 	return 0;
 }
 
-void node_B_Tree::insert_data_non_full(std::string k, std::string NRR_input)
+void node_B_Tree::insert_data_non_full(std::string k, 
+																			 std::string NRR_input,
+																			 file_input* line_inf)
 {
 
 	// Open file
@@ -103,15 +126,34 @@ void node_B_Tree::insert_data_non_full(std::string k, std::string NRR_input)
 		new_data.NRR = NRR_input;
 
 		std::vector<primary_key>::iterator it;
-	  it = primary_key_vector.begin();
+	  it = this->primary_key_vector.begin();
 
 	  // Inserts the data in the node
-		primary_key_vector.insert(it,new_data);
+		this->primary_key_vector.insert(it,new_data);
 
 		// Sorting of the node by the primary key value
-		std::stable_sort (primary_key_vector.begin(), primary_key_vector.end(), compare_primary_key);
+		std::stable_sort (this->primary_key_vector.begin(), this->primary_key_vector.end(), compare_primary_key);
 
+		if(primary_key_vector.size() == Node_size)
+		{
+			for(int i = 0; i < Node_size; i++)
+			{
+				line_inf->node += this->primary_key_vector[i].primary_key_value;
+				line_inf->node += "|";
+			}
 
+			for(int i = 0; i < Node_size; i++)
+			{
+				line_inf->node += this->primary_key_vector[i].NRR;
+				line_inf->node += "|";
+			}
+
+			for(int i = 0; i < Node_size + 1; i++)
+			{
+				line_inf->node += "-1";
+				line_inf->node += "|";
+			}
+		}
 	}
 
 	else
@@ -122,35 +164,22 @@ void node_B_Tree::insert_data_non_full(std::string k, std::string NRR_input)
 	index_file.close();
 }
 
-void node_B_Tree::insert_data(std::string primary_key_input, std::string NRR_input)
+void node_B_Tree::insert_data(std::string primary_key_input,
+														  std::string NRR_input,
+														  file_input* line_inf)
 {
 
-	// Inserts keys if the node is not fulled
-	if(primary_key_vector.size() < Node_size)
+	// If it's fulled, splitting and promotion are called in the overflow node 
+	if(this->primary_key_vector.size() == Node_size)
 	{
 		
-		// Input in the vector as struct 
-		primary_key new_data;
 
-		new_data.primary_key_value = primary_key_input;
-		new_data.NRR = NRR_input;
-
-		std::vector<primary_key>::iterator it;
-	  it = primary_key_vector.begin();
-
-	  // Inserts the data in the node
-		primary_key_vector.insert(it,new_data);
-
-		// Sorting of the node by the primary key value
-		std::stable_sort (primary_key_vector.begin(), primary_key_vector.end(), compare_primary_key);
-	
-		return;
 	}
 
-	// If it's fulled, splitting and promotion are called in the overflow node 
+	// Inserts keys if the node is not fulled
 	else
 	{
-		
+		insert_data_non_full(primary_key_input, NRR_input, line_inf);
 	}
 
 }
