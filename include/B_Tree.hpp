@@ -8,7 +8,10 @@ using namespace std;
 
 typedef struct file_input
 {
-	// Write line in index file
+	// Previous line that will be written in index file
+	std::string node_before;
+
+	// New line that will written in index file
 	std::string node;
 
 	// Index file line
@@ -25,27 +28,33 @@ typedef struct primary_key
 
 class node_B_Tree
 {
-	private:
-		int counter;
-		int line_number;
-
+	private:		
+		bool leaf;
+		
 	public:
 		std::vector<primary_key> primary_key_vector;
-		bool leaf;
 		std::vector<int> pointer;
-		int index_file_creator(std::string name_in);
-
+		std::vector<int> child;
 		void insert_data(std::string primary_key_input,
 									   std::string NRR_input,
-									   file_input* line_infs);
+									   file_input* line_inf);
 
 		void insert_data_non_full(std::string k,
 														  std::string NRR_input,
-														  file_input* line_infs);
-		void split_child();
+														  file_input* line_inf);
+
+		// Writes data in the index file(it can be root update or data insert)
+		void write_data(std::string replace, std::string new_data);
+
+		// Constructs the line corresponding to 
+		// the node register in index file
+		file_input* register_constructor(int vector_size, file_input* line_inf);
+		void split_child(int i, std::vector<primary_key> s);
 		void delete_data();
 		void search_data();
 		bool leaf_verify();
+
+		int index_file_creator(std::string name_in);
 };
 
 string primary_key_creator(string line, string line_ws);
