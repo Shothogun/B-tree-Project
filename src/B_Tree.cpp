@@ -3,10 +3,17 @@
 #include <cstring>
 #include <fstream>
 #include <algorithm>
-
+#include <cstdlib>
 #define Node_size 5
 
+/*******************************
 
+-Terminar insert_data(a partir linha 129)
+-Terminar insert_data_non_full(a partir linha 197)
+-Terminar split_child
+-Começar e terminar search_data
+
+********************************/
 // Every pattern and standards variables names 
 // are based in Cormen's aproach
 
@@ -17,9 +24,8 @@ int node_B_Tree::index_file_creator(std::string name_in)
 	// Which register position 	in the data file
 	int data_placing = 0;
 
-	// Vector of data's NRR in data file
+	// Data's NRR in data file
 	std::string NRR;
-	std::vector<std::string> NRR_vector;
 
 	// Original Data base file(lista.txt)
 	ifstream main_file;
@@ -75,7 +81,7 @@ int node_B_Tree::index_file_creator(std::string name_in)
 
 		line_inf.node_before = line_inf.node;
 
-		if(data_placing == 10)
+		if(data_placing == 5)
 		{
 			break;
 		}
@@ -97,12 +103,9 @@ void node_B_Tree::insert_data(std::string primary_key_input,
 	// If it's fulled, splitting and promotion are called in the overflow node 
 	if(this->primary_key_vector.size() == Node_size)
 	{
-		// Adds up number of nodes on the B_Tree
-		line_inf->file_line_number++;
-
 		// Data file name
   	std::string name = "indicelista";
-  	std::string extension = ".bt";	
+  	std::string extension = ".bt";
   	name += extension;
 
 		// Original index file
@@ -120,8 +123,9 @@ void node_B_Tree::insert_data(std::string primary_key_input,
 		write_data(line,new_root);
 
  	  // Creates a new node
-		std::vector<primary_key> s;
-		split_child(1, s);
+
+		std::vector<primary_key> x;
+		split_child(0, x, line_inf);
 	}
 
 	// Inserts keys if the node is not fulled
@@ -136,8 +140,10 @@ void node_B_Tree::insert_data_non_full(std::string k,
 																			 std::string NRR_input,
 																			 file_input* line_inf)
 {
+	// Right location of insertion
+	int i = this->primary_key_vector.size() - 1;
 
-	if(/*primary_key_vector.leaf == */true)
+	if(this->leaf_verify() == true)
 	{
 		// Input in the vector as struct 
 		primary_key new_data;
@@ -163,7 +169,31 @@ void node_B_Tree::insert_data_non_full(std::string k,
 
 	else
 	{
+		// Seeks right location of insert
+		while(i >= 0 && k.compare(this->primary_key_vector[i].primary_key_value) < 0)
+		{
+			i--;
+		}
 
+		i++;
+
+		// Gets node father information
+		std::vector<primary_key> x;
+		line_inf->child.erase(line_inf->child.begin(), line_inf->child.end());
+
+		for(int j = 0; j < this->primary_key_vector.size(); j++)
+		{
+			x.insert(x.begin(), this->primary_key_vector[j]);
+		}
+
+		std::stable_sort (x.begin(), x.end(), compare_primary_key);
+
+		for(int j = 0; j < this->child.size(); j++)
+		{
+			line_inf->child.insert(line_inf->child.end(), this->child[j]);
+		}
+
+		read_data(this->child[i]);
 	}
 }
 
@@ -234,6 +264,8 @@ void node_B_Tree::write_data(std::string replace, std::string new_data)
   index_file_out.close();
 }	
 
+
+
 file_input* node_B_Tree::register_constructor(int vector_size, file_input* line_inf)
 {
 	// Writes node counter(amount of keys in node)
@@ -303,10 +335,119 @@ file_input* node_B_Tree::register_constructor(int vector_size, file_input* line_
 	return line_inf;
 }
 
-
-
-void node_B_Tree::split_child(int i, std::vector<primary_key> s)
+void node_B_Tree::read_data(int node_number)
 {
+	// Data file name
+  std::string name = "indicelista";
+  std::string extension = ".bt";
+  name += extension;
+
+  // Original index file
+  ifstream index_file_in(name);
+
+  std::string line;
+
+  // Go to the line where the child is 
+	for(int i = 0; i <= node_number; i++)
+	{
+		getline(index_file_in,line);
+	}
+
+	index_file_in.close();
+
+	// Counts how many keys are in the node
+	char counter_string[20];
+
+	line.copy(counter_string,2,0);
+
+	int counter = atoi(counter_string);
+
+	// Gets information in the node
+
+	this->primary_key_vector.erase(this->primary_key_vector.begin(), this->primary_key_vector.end());
+	this->child.erase(this->child.begin(), this->child.end());
+
+	for(int i = 0; i < counter ; i++)
+	{
+		char key[20];
+		char NRR[20];
+
+		// Input in the vector as struct 
+		primary_key new_data;
+
+		line.copy(key, 8, (3 + 9*i));
+		line.copy(NRR, 2, (48 + 3*i));
+
+
+		new_data.primary_key_value.append(key, 8);
+		new_data.NRR.append(NRR,2);
+
+		std::vector<primary_key>::iterator it;
+	  it = this->primary_key_vector.begin();
+
+	  // Inserts the data in the node
+		this->primary_key_vector.insert(it,new_data);
+	}
+
+	std::stable_sort (this->primary_key_vector.begin(), this->primary_key_vector.end(), compare_primary_key);
+
+
+
+	char child[20];
+	child[2] = '\0';	
+	int i = 0;
+	line.copy(child, 2, (63 + i*3));
+
+	while(strcmp(child, "--") != 0 && (63 + i*3 < 81))
+	{
+		cout << child << endl;
+		this->child.insert(this->child.begin(), atoi(child));
+		i++;	
+		line.copy(child, 2, (63 + i*3));
+	}
+}
+
+void node_B_Tree::split_child(int i, std::vector<primary_key> x,file_input* line_inf)
+{
+	const int empty = 0;
+
+	// New node, child of node s
+	std::vector<primary_key> z;
+
+	int vector_size = this->primary_key_vector.size();
+	int node_lenght = Node_size/2;	
+
+	cout << node_lenght << endl;
+
+	for(int j = node_lenght+1 ; j < vector_size; j++)
+	{
+
+		std::vector<primary_key>::iterator it;
+	  it = z.begin();	
+
+		z.insert(it,this->primary_key_vector[j]);
+	}
+
+	std::stable_sort (z.begin(), z.end(), compare_primary_key);
+
+	/*
+
+	if(this->leaf == false)
+	{
+		for (int j = node_lenght + 1; j < Node_size + 1; j++)
+		{
+			z_child =;
+		}
+	}
+
+	
+	std::vector<int>::iterator it;
+	it = x.begin();
+	
+	std ::string node_location = to_string(line_inf->file_line_number);
+
+	x.child.insert(it+i, );
+	*/
 	
 }
 
@@ -320,11 +461,19 @@ void node_B_Tree::search_data()
 	return;
 }
 
-bool node_B_Tree::leaf_verify()
+bool node_B_Tree::leaf_verify( )
 {
-	return true;
-}
+	if (this->child.size() == 0)
+	{
+		return true;		
+	}
 
+	else
+	{
+		return false;
+	}
+
+}
 
 string primary_key_creator(std::string line, std::string line_ws)
 {

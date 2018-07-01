@@ -1,3 +1,4 @@
+
 #ifndef B_tree
 #define B_tree
 
@@ -17,6 +18,8 @@ typedef struct file_input
 	// Index file line
 	int file_line_number;
 
+	std::vector<int> child;
+
 } file_input;
 
 typedef struct primary_key
@@ -29,11 +32,9 @@ typedef struct primary_key
 class node_B_Tree
 {
 	private:		
-		bool leaf;
 		
 	public:
 		std::vector<primary_key> primary_key_vector;
-		std::vector<int> pointer;
 		std::vector<int> child;
 		void insert_data(std::string primary_key_input,
 									   std::string NRR_input,
@@ -46,10 +47,13 @@ class node_B_Tree
 		// Writes data in the index file(it can be root update or data insert)
 		void write_data(std::string replace, std::string new_data);
 
+		// Read node from index file(input: line wich node is located in index file)
+		void read_data(int node_number);
+
 		// Constructs the line corresponding to 
 		// the node register in index file
 		file_input* register_constructor(int vector_size, file_input* line_inf);
-		void split_child(int i, std::vector<primary_key> s);
+		void split_child(int i, std::vector<primary_key> s, file_input* line_inf);
 		void delete_data();
 		void search_data();
 		bool leaf_verify();
