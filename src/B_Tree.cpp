@@ -4,7 +4,7 @@
 #include <fstream>
 #include <algorithm>
 #include <cstdlib>
-#define Node_size 3
+#define Node_size 5
 
 /*******************************
 
@@ -83,11 +83,6 @@ int node_B_Tree::index_file_creator(std::string name_in)
 
 		// Returns to root
 		set_to_root(&line_inf);
-
-		if(data_placing == 26)
-		{
-			break;
-		}
 	}
 
 	main_file.close();
@@ -630,9 +625,72 @@ void node_B_Tree::delete_data()
 	return;
 }
 
-void node_B_Tree::search_data()
+// Public
+std::vector<int> node_B_Tree::search_data(node_B_Tree* node, std::string k, int root_line)
 {
-	return;
+	
+	int i =  0;
+	std::vector<int> path;
+
+	path.insert(path.end(),root_line);
+
+	// Seek through the node
+	while(i <= this->primary_key_vector.size() && k.compare(this->primary_key_vector[i].primary_key_value) > 0)
+	{
+		i++;
+	}
+
+	// Found the key
+	if(i <= this->primary_key_vector.size() && k.compare(this->primary_key_vector[i].primary_key_value) == 0)
+	{
+		return path;
+	}
+
+	// Not found the key, returns the last path element as 0
+	if(this->leaf_verify() == true)
+	{
+		path.insert(path.end(), 0);
+		return path;
+	}
+
+	// Recursively seeks through the the children nodes
+	else
+	{
+		path.insert(path.end(), this->child[i]);
+		read_data(this->child[i]);
+		return search_data(this, k, &path);
+	}
+}
+
+// Private
+std::vector<int> node_B_Tree::search_data(node_B_Tree* node, std::string k, std::vector<int>* path)
+{
+	
+	int i =  0;
+
+	while(i <= this->primary_key_vector.size() && k.compare(this->primary_key_vector[i].primary_key_value) > 0)
+	{
+		i++;
+	}
+
+	if(i <= this->primary_key_vector.size() && k.compare(this->primary_key_vector[i].primary_key_value) == 0)
+	{
+		return *path;
+	}
+
+	// Not found the key, returns the last path element as 0
+	if(this->leaf_verify() == true)
+	{
+		path->insert(path->begin(), 0);
+		return *path;
+	}
+
+	else
+	{
+		path->insert(path->end(), this->child[i]);
+		read_data(this->child[i]);
+		return this->search_data(this, k, path);
+	}
 }
 
 bool node_B_Tree::leaf_verify( )

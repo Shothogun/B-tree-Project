@@ -64,10 +64,11 @@ class node_B_Tree
 										 file_input* line_inf);
 		void set_to_root(file_input* line_inf);
 		void delete_data();
-		void search_data();
+		std::vector<int> search_data(node_B_Tree* node, std::string k, std::vector<int>* path);
 		bool leaf_verify();
 		
 	public:
+		std::vector<int> search_data(node_B_Tree* node, std::string k, int root_line);
 		int index_file_creator(std::string name_in);
 
 };
