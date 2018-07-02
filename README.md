@@ -25,6 +25,7 @@ espaço separado para cada elemento no arquivo de registros (Nome-40/Matricula-5
 Sobre o algoritmo:
 
 No programa em questao e utilizada uma formatacao no arquivo de indices que segue o seguinte padrao:
+
 			Primeira linha- Cabecalho com a linha da raiz "R(numero)"
 			Outras linhas- Um nodo com: chaves primarias, NRR no arquivo de registros, NRR dos filhos. A 
 			correspondencia entre os dados e feita pela ordem em que eles aparecem. Um nodo sem dados e igual a um 
