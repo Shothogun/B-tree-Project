@@ -13,8 +13,6 @@
 
 ********************************/
 
-// ERRO no 25 aluno(raiz passa a ser o nó 9, que é inexistente)
-
 int node_B_Tree::index_file_creator(std::string name_in)
 {
 	// Which register position 	in the data file
@@ -29,6 +27,9 @@ int node_B_Tree::index_file_creator(std::string name_in)
 	// Index_file
 	ofstream index_file;
 
+	// * string
+	std::string a;
+	a += "*";
 
 	// Output file name
 	std::string name_out = "indicelista";
@@ -54,35 +55,41 @@ int node_B_Tree::index_file_creator(std::string name_in)
 	index_file.close();
 
 	while(getline(main_file,line))
-	{
-		// Initialization of nodes's positions
+	{ 
+		std::string verificator;
 
-		// When its the 5 first keys
-		if(data_placing < 5)
+		verificator = line[0];
+
+		// Doesn't read erased data
+		if(a.compare(verificator) != 0)
 		{
-			line_inf.parent_node_position = 1;
-			line_inf.current_node_position = 1;
+			// When its the 5 first keys
+			if(data_placing < 5)
+			{
+				line_inf.parent_node_position = 1;
+				line_inf.current_node_position = 1;
+			}
+
+			// Reinitialization of string "NRR"
+			NRR.erase(NRR.begin(), NRR.end());
+
+			// Inserts primary key value to line
+			primary_key_input = primary_key_creator(line,primary_key_input);
+
+			if(data_placing < 9)
+			{
+				NRR += "0";
+			}
+
+			NRR += to_string(data_placing+1);
+
+			insert_data(primary_key_input, NRR, &line_inf);
+
+			data_placing++;
+
+			// Returns to root
+			set_to_root(&line_inf);
 		}
-
-		// Reinitialization of string "NRR"
-		NRR.erase(NRR.begin(), NRR.end());
-
-		// Inserts primary key value to line
-		primary_key_input = primary_key_creator(line,primary_key_input);
-
-		if(data_placing < 9)
-		{
-			NRR += "0";
-		}
-
-		NRR += to_string(data_placing+1);
-
-		insert_data(primary_key_input, NRR, &line_inf);
-
-		data_placing++;
-
-		// Returns to root
-		set_to_root(&line_inf);
 	}
 
 	main_file.close();
@@ -91,6 +98,7 @@ int node_B_Tree::index_file_creator(std::string name_in)
 	return 0;
 }
 
+// Private
 void node_B_Tree::insert_data(std::string primary_key_input,
 														  std::string NRR_input,
 														  file_input* line_inf)
@@ -151,6 +159,22 @@ void node_B_Tree::insert_data(std::string primary_key_input,
 		insert_data_non_full(NRR_input, primary_key_input, line_inf);
 	}
 
+}
+
+//Public
+void node_B_Tree::insert_data(std::string k)
+{
+	file_input line_inf;
+	std::string NRR;
+
+	NRR	= this->get_NRR();
+	this->set_file_line_number(&line_inf);
+
+	this->set_to_root(&line_inf);
+
+	this->insert_data(k, NRR, &line_inf);
+
+	return;
 }
 
 void node_B_Tree::insert_data_non_full(std::string NRR_input,
@@ -620,6 +644,40 @@ void node_B_Tree::split_child(std::vector<primary_key>* x,
 	line_inf->node_before = read_data(line_inf->parent_node_position);
 }
 
+void node_B_Tree::set_to_root(file_input* line_inf)
+{
+	// Data file name
+  std::string name = "indicelista";
+  std::string extension = ".bt";
+  name += extension;
+
+  // Original index file
+  ifstream index_file_in(name);
+
+  std::string line;
+
+  getline(index_file_in, line);
+
+  line.erase(line.begin());
+
+  char child[100];
+	child[2] = '\0';
+
+	line.copy(child,2,0);
+
+	int node_number = atoi(child);
+
+	line_inf->parent_node_position = node_number;
+	line_inf->current_node_position = node_number;
+
+	// Sets node before(to locate and replace the line)
+  line_inf->node_before = read_data(node_number);
+
+
+	index_file_in.close();
+
+}
+
 void node_B_Tree::delete_data()
 {
 	return;
@@ -707,39 +765,44 @@ bool node_B_Tree::leaf_verify( )
 
 }
 
-void node_B_Tree::set_to_root(file_input* line_inf)
+std::string node_B_Tree::get_NRR()
 {
-	// Data file name
-  std::string name = "indicelista";
-  std::string extension = ".bt";
-  name += extension;
+	ifstream main_file("lista.txt");
+	std::string line;
 
-  // Original index file
-  ifstream index_file_in(name);
+	int i = 0;
 
-  std::string line;
+	while(getline(main_file,line))
+	{
+		i++;
+	}
 
-  getline(index_file_in, line);
+	// A new key will be added
+	i++;
 
-  line.erase(line.begin());
-
-  char child[100];
-	child[2] = '\0';
-
-	line.copy(child,2,0);
-
-	int node_number = atoi(child);
-
-	line_inf->parent_node_position = node_number;
-	line_inf->current_node_position = node_number;
-
-	// Sets node before(to locate and replace the line)
-  line_inf->node_before = read_data(node_number);
-
-
-	index_file_in.close();
-
+	return to_string(i);
 }
+
+file_input* node_B_Tree::set_file_line_number(file_input* line_inf)
+{
+	ifstream main_file("indicelista.bt");
+	std::string line;
+
+	int i = 0;
+
+	while(getline(main_file,line))
+	{
+		i++;
+	}
+
+	// Doesn't count root indicator
+	i--;
+
+	line_inf->file_line_number = i;
+
+	return line_inf;
+}
+
 
 string primary_key_creator(std::string line, std::string line_ws)
 {

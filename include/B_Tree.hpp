@@ -66,8 +66,12 @@ class node_B_Tree
 		void delete_data();
 		std::vector<int> search_data(node_B_Tree* node, std::string k, std::vector<int>* path);
 		bool leaf_verify();
+		std::string get_NRR();
+		file_input* set_file_line_number(file_input* line_inf);
 		
 	public:
+
+		void insert_data(std::string k);
 		std::vector<int> search_data(node_B_Tree* node, std::string k, int root_line);
 		int index_file_creator(std::string name_in);
 
