@@ -4,23 +4,19 @@
 #include <fstream>
 #include <algorithm>
 #include <cstdlib>
-#define Node_size 5
+#define Node_size 3
 
 /*******************************
 
--Terminar insert_data(a partir linha 129)
--Terminar insert_data_non_full(a partir linha 197)
--Terminar split_child
--Começar e terminar search_data
+ Every pattern and standards variables names 
+ are based in Cormen's aproach
 
 ********************************/
-// Every pattern and standards variables names 
-// are based in Cormen's aproach
+
+// ERRO no 25 aluno(raiz passa a ser o nó 9, que é inexistente)
 
 int node_B_Tree::index_file_creator(std::string name_in)
 {
-	const int empty = 0;
-
 	// Which register position 	in the data file
 	int data_placing = 0;
 
@@ -53,22 +49,28 @@ int node_B_Tree::index_file_creator(std::string name_in)
 	index_file.open(name_out, ios::out | ios::trunc);
 	main_file.open(name_in, ios::in);
 
-	index_file << "R1\n";
+	index_file << "R01\n";
 
 	index_file.close();
 
 	while(getline(main_file,line))
 	{
-		// Reinitialization of string "node" if node is full
-		line_inf.node.erase(line_inf.node.begin(), line_inf.node.end());
-		
+		// Initialization of nodes's positions
+
+		// When its the 5 first keys
+		if(data_placing < 5)
+		{
+			line_inf.parent_node_position = 1;
+			line_inf.current_node_position = 1;
+		}
+
 		// Reinitialization of string "NRR"
 		NRR.erase(NRR.begin(), NRR.end());
 
 		// Inserts primary key value to line
 		primary_key_input = primary_key_creator(line,primary_key_input);
 
-		if(data_placing < 10)
+		if(data_placing < 9)
 		{
 			NRR += "0";
 		}
@@ -79,16 +81,15 @@ int node_B_Tree::index_file_creator(std::string name_in)
 
 		data_placing++;
 
-		line_inf.node_before = line_inf.node;
+		// Returns to root
+		set_to_root(&line_inf);
 
-		if(data_placing == 5)
+		if(data_placing == 26)
 		{
 			break;
 		}
-
 	}
 
-	cout << line_inf.node << endl;
 	main_file.close();
 
 
@@ -103,6 +104,18 @@ void node_B_Tree::insert_data(std::string primary_key_input,
 	// If it's fulled, splitting and promotion are called in the overflow node 
 	if(this->primary_key_vector.size() == Node_size)
 	{
+		line_inf->file_line_number++;
+
+		// Update root indicator
+		std::string new_root = "R";
+
+		if(line_inf->file_line_number < 10)
+		{
+			new_root += "0";
+		}
+
+		new_root += to_string(line_inf->file_line_number+1);
+
 		// Data file name
   	std::string name = "indicelista";
   	std::string extension = ".bt";
@@ -117,27 +130,36 @@ void node_B_Tree::insert_data(std::string primary_key_input,
 
  	  index_file_in.close();
 
-		// Update root indicator
-		std::string new_root = "R";
-		new_root += to_string(line_inf->file_line_number);
 		write_data(line,new_root);
 
  	  // Creates a new node
 
 		std::vector<primary_key> x;
-		split_child(0, x, line_inf);
+		std::vector<int> x_child;
+
+		line_inf->current_node_position = line_inf->parent_node_position;
+		line_inf->parent_node_position = line_inf->file_line_number + 1;
+		
+		split_child(&x, &x_child, 0, line_inf);
+
+		set_to_root(line_inf);
+
+		insert_data_non_full(NRR_input, primary_key_input, line_inf);
+
+		line_inf->file_line_number++;
+
 	}
 
 	// Inserts keys if the node is not fulled
 	else
 	{
-		insert_data_non_full(primary_key_input, NRR_input, line_inf);
+		insert_data_non_full(NRR_input, primary_key_input, line_inf);
 	}
 
 }
 
-void node_B_Tree::insert_data_non_full(std::string k, 
-																			 std::string NRR_input,
+void node_B_Tree::insert_data_non_full(std::string NRR_input,
+																			 std::string k, 
 																			 file_input* line_inf)
 {
 	// Right location of insertion
@@ -162,7 +184,11 @@ void node_B_Tree::insert_data_non_full(std::string k,
 
 		int vector_size = this->primary_key_vector.size();
 
-		line_inf = register_constructor(vector_size, line_inf);
+
+		line_inf = register_constructor(vector_size,
+																	  this->primary_key_vector, 
+																	  this->child,
+																		line_inf);
 
 		write_data(line_inf->node_before,line_inf->node);
 	}
@@ -177,9 +203,12 @@ void node_B_Tree::insert_data_non_full(std::string k,
 
 		i++;
 
-		// Gets node father information
+		line_inf->parent_node_position = line_inf->current_node_position;
+		line_inf->current_node_position = this->child[i];
+
+		// Gets node parent information
 		std::vector<primary_key> x;
-		line_inf->child.erase(line_inf->child.begin(), line_inf->child.end());
+		std::vector<int> x_child;
 
 		for(int j = 0; j < this->primary_key_vector.size(); j++)
 		{
@@ -190,10 +219,27 @@ void node_B_Tree::insert_data_non_full(std::string k,
 
 		for(int j = 0; j < this->child.size(); j++)
 		{
-			line_inf->child.insert(line_inf->child.end(), this->child[j]);
+			x_child.insert(x_child.end(), this->child[j]);
 		}
 
-		read_data(this->child[i]);
+
+		line_inf->node_before = read_data(this->child[i]);
+
+		if(this->primary_key_vector.size() == Node_size)
+		{
+			line_inf->file_line_number++;
+
+			split_child(&x, &x_child ,i, line_inf);
+
+			if(k.compare(x[i].primary_key_value) > 0 )
+			{
+				i++;
+				line_inf->node_before = read_data(this->child[i]);
+				line_inf->current_node_position = this->child[i];
+			}
+		}
+
+		insert_data_non_full(NRR_input,k,line_inf);
 	}
 }
 
@@ -235,107 +281,55 @@ void node_B_Tree::write_data(std::string replace, std::string new_data)
 
 	index_file_out.open(name);
 
-	// Line that will be replaced
-	std::string strReplace = replace;
-
-	// New line replaced
-	std::string strNew = new_data;
-
-	// Seeks the matching line and replaces
-	while(getline(index_file_copy,strTemp))
+	if(replace == "last")
 	{
-	  if(strTemp == strReplace)
-	  {
-	    strTemp = strNew;
-	  }
-	  strTemp += "\n";
-	  index_file_out << strTemp;
+		while(getline(index_file_copy,strTemp))
+		{
+		  strTemp += "\n";
+		  index_file_out << strTemp;
+		}
 
-	  verifier++;
+		index_file_out << new_data;
+		index_file_out << "\n";
 	}
 
-	// If there's only one line(verifier = 1), just writes the node
-	if(verifier == 1)
+
+	else
 	{
-		index_file_out << new_data;
+		// Line that will be replaced
+		std::string strReplace = replace;
+
+		// New line replaced
+		std::string strNew = new_data;
+
+		// Seeks the matching line and replaces
+		while(getline(index_file_copy,strTemp))
+		{
+		  if(strTemp == strReplace)
+		  {
+		    strTemp = strNew;
+		  }
+		  strTemp += "\n";
+		  index_file_out << strTemp;
+
+		  verifier++;
+		}
+
+		// If there's only one line(verifier = 1), just writes the node
+		if(verifier == 1)
+		{
+			index_file_out << new_data ;
+			index_file_out << "\n";
+		}
+
 	}
 
 	index_file_copy.close();
   index_file_out.close();
+
 }	
 
-
-
-file_input* node_B_Tree::register_constructor(int vector_size, file_input* line_inf)
-{
-	// Writes node counter(amount of keys in node)
-	if(vector_size < 10)
-	{
-		line_inf->node += "0";
-	}
-
-	line_inf->node += to_string(vector_size) + "|";
-
-	// Write node's keys
-	for(int i = 0; i < vector_size; i++)
-	{
-		line_inf->node += this->primary_key_vector[i].primary_key_value;
-		line_inf->node += "|";
-	}
-
-	// Fill the renmant space of key 
-	if(vector_size < Node_size)
-	{
-		for(int i = 0; i < Node_size - vector_size; i++)
-		{
-			line_inf->node += "--------";
-			line_inf->node += "|";
-		}
-	}
-
-	// Write key's NRR
-	for(int i = 0; i < vector_size; i++)
-	{
-		line_inf->node += this->primary_key_vector[i].NRR;
-		line_inf->node += "|";
-	}
-
-	// Fill the renmant space of NRR
-	if(vector_size < Node_size)
-	{
-		for(int i = 0; i < Node_size - vector_size; i++)
-		{
-			line_inf->node += "-1";
-			line_inf->node += "|";
-		}
-	}
-
-	// Write node's child
-	for(int i = 0; i < this->child.size(); i++)
-	{
-		if(this->child[i] < 10)
-		{
-			line_inf->node += "0";
-		}
-		
-		line_inf->node += to_string(this->child[i]);
-		line_inf->node += "|";
-	}
-
-	// Fill the renmant space of childs
-	if(this->child.size() < Node_size)
-	{	
-		for(int i = 0; i < Node_size + 1; i++)
-		{
-			line_inf->node += "--";
-			line_inf->node += "|";
-		}
-	}
-
-	return line_inf;
-}
-
-void node_B_Tree::read_data(int node_number)
+std::string node_B_Tree::read_data(int node_number)
 {
 	// Data file name
   std::string name = "indicelista";
@@ -356,7 +350,7 @@ void node_B_Tree::read_data(int node_number)
 	index_file_in.close();
 
 	// Counts how many keys are in the node
-	char counter_string[20];
+	char counter_string[100];
 
 	line.copy(counter_string,2,0);
 
@@ -367,16 +361,20 @@ void node_B_Tree::read_data(int node_number)
 	this->primary_key_vector.erase(this->primary_key_vector.begin(), this->primary_key_vector.end());
 	this->child.erase(this->child.begin(), this->child.end());
 
+	// Initial position of NRR in file
+	int size1 = 3 + Node_size*9;
+
 	for(int i = 0; i < counter ; i++)
 	{
-		char key[20];
-		char NRR[20];
+		char key[100];
+		char NRR[100];
+
 
 		// Input in the vector as struct 
 		primary_key new_data;
 
 		line.copy(key, 8, (3 + 9*i));
-		line.copy(NRR, 2, (48 + 3*i));
+		line.copy(NRR, 2, (size1 + 3*i));
 
 
 		new_data.primary_key_value.append(key, 8);
@@ -391,34 +389,118 @@ void node_B_Tree::read_data(int node_number)
 
 	std::stable_sort (this->primary_key_vector.begin(), this->primary_key_vector.end(), compare_primary_key);
 
+	// Initial position of children in file
+	int size2 = size1 + Node_size*3;
 
-
-	char child[20];
+	// Last child position in file
+	int size3 = size2 + Node_size*3 + 1;
+ 
+	char child[100];
 	child[2] = '\0';	
 	int i = 0;
-	line.copy(child, 2, (63 + i*3));
+	line.copy(child, 2, (size2 + i*3));
 
-	while(strcmp(child, "--") != 0 && (63 + i*3 < 81))
+
+	while(strcmp(child, "--") != 0 && (size2 + i*3 < size3))
 	{
-		cout << child << endl;
-		this->child.insert(this->child.begin(), atoi(child));
+		this->child.insert(this->child.end(), atoi(child));
 		i++;	
-		line.copy(child, 2, (63 + i*3));
+		line.copy(child, 2, (size2 + i*3));
 	}
+
+	return line;
 }
 
-void node_B_Tree::split_child(int i, std::vector<primary_key> x,file_input* line_inf)
+file_input* node_B_Tree::register_constructor(int vector_size, 
+																							std::vector<primary_key> primary_key_input_vector, 
+																							std::vector<int> child,
+																							file_input* line_inf)
 {
-	const int empty = 0;
+	// Reinitialization of string "node" if node is full
+	line_inf->node.erase(line_inf->node.begin(), line_inf->node.end());
 
-	// New node, child of node s
+	// Writes node counter(amount of keys in node)
+	if(vector_size < 10)
+	{
+		line_inf->node += "0";
+	}
+
+	line_inf->node += to_string(vector_size) + "|";
+
+	// Write node's keys
+	for(int i = 0; i < vector_size; i++)
+	{
+		line_inf->node += primary_key_input_vector[i].primary_key_value;
+		line_inf->node += "|";
+	}
+
+	// Fill the renmant space of key 
+	if(vector_size < Node_size)
+	{
+		for(int i = 0; i < Node_size - vector_size; i++)
+		{
+			line_inf->node += "--------";
+			line_inf->node += "|";
+		}
+	}
+
+	// Write key's NRR
+	for(int i = 0; i < vector_size; i++)
+	{
+		line_inf->node += primary_key_input_vector[i].NRR;
+		line_inf->node += "|";
+	}
+
+	// Fill the renmant space of NRR
+	if(vector_size < Node_size)
+	{
+		for(int i = 0; i < Node_size - vector_size; i++)
+		{
+			line_inf->node += "-1";
+			line_inf->node += "|";
+		}
+	}
+
+	// Write node's child
+	for(int i = 0; i < child.size(); i++)
+	{
+		if(child[i] < 10)
+		{
+			line_inf->node += "0";
+		}
+		
+		line_inf->node += to_string(child[i]);
+		line_inf->node += "|";
+	}
+
+	// Fill the renmant space of childs
+	if(child.size() < Node_size + 1)
+	{	
+		for(int i = 0; i < Node_size - child.size() + 1; i++)
+		{
+			line_inf->node += "--";
+			line_inf->node += "|";
+		}
+	}
+
+	return line_inf;
+}
+
+void node_B_Tree::split_child(std::vector<primary_key>* x,
+															std::vector<int>* x_child,
+														  int i,
+														  file_input* line_inf)
+{
+	// New node, child of node x
+	const int roots_children = 2;
 	std::vector<primary_key> z;
+	std::vector<int> z_child;
 
 	int vector_size = this->primary_key_vector.size();
 	int node_lenght = Node_size/2;	
 
-	cout << node_lenght << endl;
 
+	// Splits child node in two(z and current node_B_Tree)
 	for(int j = node_lenght+1 ; j < vector_size; j++)
 	{
 
@@ -428,27 +510,119 @@ void node_B_Tree::split_child(int i, std::vector<primary_key> x,file_input* line
 		z.insert(it,this->primary_key_vector[j]);
 	}
 
+
+	if(line_inf->file_line_number == roots_children)
+	{
+		x_child->insert(x_child->begin(), line_inf->file_line_number);
+		x_child->insert(x_child->begin(), 1);
+	}
+
+
+	else
+	{
+		if(x_child->size() == 0)
+		{
+			x_child->insert(x_child->begin(), line_inf->file_line_number);	
+			x_child->insert(x_child->begin(), line_inf->current_node_position);
+		}
+
+		else
+		{
+			x_child->insert(x_child->begin()+i+1, line_inf->file_line_number);
+		}
+
+	}
+
+	// Input in the vector as struct 
+	primary_key new_data;
+
+	new_data.primary_key_value = this->primary_key_vector[node_lenght].primary_key_value;
+	new_data.NRR = this->primary_key_vector[node_lenght].NRR;
+
+	x->insert(x->begin()+i,
+					 new_data);
+
+	// Removes y's node split keys
+	for(int j = node_lenght; j <  vector_size; j++)
+	{
+		this->primary_key_vector.erase(this->primary_key_vector.begin()+j);
+	}
+
 	std::stable_sort (z.begin(), z.end(), compare_primary_key);
 
-	/*
-
-	if(this->leaf == false)
+	if(this->leaf_verify() == false)
 	{
-		for (int j = node_lenght + 1; j < Node_size + 1; j++)
+		for (int j = node_lenght+1; j < this->child.size(); j++)
 		{
-			z_child =;
+			z_child.insert(z_child.end(),this->child[j]);
+		}
+
+		int child_size = this->child.size();
+
+		// Removes y's children split keys
+		for(int j = node_lenght+1; j <  child_size; j++)
+		{
+			this->child.erase(this->child.end()-1);
 		}
 	}
 
-	
-	std::vector<int>::iterator it;
-	it = x.begin();
-	
-	std ::string node_location = to_string(line_inf->file_line_number);
 
-	x.child.insert(it+i, );
-	*/
+	// Sorting of the node by the primary key value
+	std::stable_sort (x->begin(), x->end(), compare_primary_key);
+
+	int size;
+
+	// Write current node data
+	size = this->primary_key_vector.size();
+	line_inf = register_constructor(size, 
+																	this->primary_key_vector,
+																	this->child,
+																	line_inf);
+
+	line_inf->node_before = read_data(line_inf->current_node_position);
+
+	write_data(line_inf->node_before, line_inf->node);	
+
+	// Write z node data(current node brother)
+
+	line_inf->node.erase(line_inf->node.begin(), line_inf->node.end());
+
+	size = z.size();
+	line_inf = register_constructor(size, 
+																	z,
+																	z_child,
+																	line_inf);
+
+	write_data("last", line_inf->node);
 	
+	// Write x node data(parent node)
+
+
+	line_inf->node.erase(line_inf->node.begin(), line_inf->node.end());
+
+
+	size = x->size();
+	line_inf = register_constructor(size, 
+																	*x,
+																	*x_child,
+																	line_inf);
+
+	// x is a new node
+	if(line_inf->parent_node_position == line_inf->file_line_number + 1)
+	{
+		write_data("last", line_inf->node);
+
+	}
+
+
+	// x already exists
+	else
+	{
+		line_inf->node_before = read_data(line_inf->parent_node_position);
+		write_data(line_inf->node_before, line_inf->node);
+	}
+
+	line_inf->node_before = read_data(line_inf->parent_node_position);
 }
 
 void node_B_Tree::delete_data()
@@ -472,6 +646,40 @@ bool node_B_Tree::leaf_verify( )
 	{
 		return false;
 	}
+
+}
+
+void node_B_Tree::set_to_root(file_input* line_inf)
+{
+	// Data file name
+  std::string name = "indicelista";
+  std::string extension = ".bt";
+  name += extension;
+
+  // Original index file
+  ifstream index_file_in(name);
+
+  std::string line;
+
+  getline(index_file_in, line);
+
+  line.erase(line.begin());
+
+  char child[100];
+	child[2] = '\0';
+
+	line.copy(child,2,0);
+
+	int node_number = atoi(child);
+
+	line_inf->parent_node_position = node_number;
+	line_inf->current_node_position = node_number;
+
+	// Sets node before(to locate and replace the line)
+  line_inf->node_before = read_data(node_number);
+
+
+	index_file_in.close();
 
 }
 
