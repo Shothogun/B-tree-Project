@@ -19,7 +19,7 @@ int main()
 		return 0;
 	}
 
-	node_B_Tree(number_keys) current_node;
+	node_B_Tree current_node (number_keys);
 
 	main_menu(registers_file, B_tree_file, &current_node);
 

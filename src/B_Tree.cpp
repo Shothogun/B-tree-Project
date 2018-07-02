@@ -52,10 +52,10 @@ int node_B_Tree::delete_data (primary_key del_primary_key, vector<int> parents, 
 		// Achar a chave
 		for (position = 0; position < primary_key_vector.size(); position++)
 		{
-			if (primary_key_vector[position].NRR.compare(del_primary_key.NRR) &&
-					primary_key_vector[position].primary_key_value.compare(del_primary_key.primary_key_value))
+			if (!(primary_key_vector[position].NRR.compare(del_primary_key.NRR)) &&
+					!(primary_key_vector[position].primary_key_value.compare(del_primary_key.primary_key_value)))
 			{
-				cur_position = position;node_number
+				cur_position = position;
 				break;
 			}
 		}
@@ -78,8 +78,8 @@ int node_B_Tree::delete_data (primary_key del_primary_key, vector<int> parents, 
 		// Achar a chave
 		for (position = 0; position < primary_key_vector.size(); position++)
 		{
-			if (primary_key_vector[position].NRR.compare(del_primary_key.NRR) &&
-					primary_key_vector[position].primary_key_value.compare(del_primary_key.primary_key_value))
+			if (!(primary_key_vector[position].NRR.compare(del_primary_key.NRR)) &&
+					!(primary_key_vector[position].primary_key_value.compare(del_primary_key.primary_key_value)))
 			{
 				cur_position = position;
 				break;
